@@ -1,0 +1,38 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 236132924050.dkr.ecr.us-west-2.amazonaws.com
+      - COMMIT_TAG="$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
+      - TAG=${COMMIT_TAG:=latest}
+      - IMAGE_NAME=oneweb-track-viz
+      - REPOSITORY_URI=236132924050.dkr.ecr.us-west-2.amazonaws.com/$IMAGE_NAME
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG
+      - echo Pushing the Docker image...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$TAG
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+
+cache:
+  paths:
+    - ./.cache/**/*
+    - ./.local/**/*
+    - ./.m2/**/*
+    - ./node_modules/**/*
+    - /root/.cache/**/*
+    - /root/.local/**/*
+    - /root/.m2/**/*
+    - /root/.nuget/**/*
+    - /root/node_modules/**/*
+    - /var/cache/apt/**/*
